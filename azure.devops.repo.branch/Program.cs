@@ -23,6 +23,31 @@ class program
         // Get repositories
         List<Repository> repositories = await DevoService.GetRepositories(organization, project, pat);
 
-        HelperMethods.SaveToCsv(repositories, $"{outputFilePath}\\repos.csv");
+        var allBranches = new List<Result>();
+
+        // Get branches for each repository
+        foreach (var repo in repositories)
+        {
+            List<Branch> branches = await DevoService.GetBranches(organization, project, repo.Id, pat);
+
+            Console.WriteLine($"Branches in Repository '{repo.Name}':");
+
+            foreach (var branch in branches)
+            {
+                allBranches.Add(new Result
+                {
+                    RepoId = repo.Id,
+                    RepoName = repo.Name,
+                    RepoWebUrl = repo.WebUrl,
+                    BranchName = branch.Name,
+                    BranchCreator = branch.Creator.DisplayName,
+                    BranchObjectId = branch.ObjectId
+                });
+                Console.WriteLine($"- {branch.Name}");
+            }
+            Console.WriteLine();
+        }
+
+        HelperMethods.SaveToCsv(allBranches, $"{outputFilePath}\\repoBranches.csv");
     }
 }

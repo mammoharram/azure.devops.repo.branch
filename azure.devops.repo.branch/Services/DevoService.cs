@@ -33,4 +33,31 @@ internal class DevoService
 
         return repositories;
     }
+
+    internal static async Task<List<Branch>> GetBranches(string organization, string project, string repositoryId, string pat)
+    {
+        var branches = new List<Branch>();
+
+        using (var client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($":{pat}")));
+
+            string url = $"https://dev.azure.com/{organization}/{project}/_apis/git/repositories/{repositoryId}/refs?filter=heads&api-version=6.0";
+            HttpResponseMessage response = await client.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string responseBody = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<BranchesResult>(responseBody);
+                branches = result.Value;
+            }
+            else
+            {
+                Console.WriteLine($"Failed to get branches for repository {repositoryId}: {response.ReasonPhrase}");
+            }
+        }
+
+        return branches;
+    }
 }
